@@ -18,7 +18,7 @@ class Archived_file
   end
 
   def save(folder="")
-    puts "Saving #{@filename.last}"
+    puts "Saving #{@filename.last}. Starts at #{@filestart}, ends at #{@fileend}, size is #{@filesize} bytes."
     begin
       outname = File.join(folder,@filename)
       FileUtils.mkdir_p(File.dirname(outname))
@@ -55,7 +55,7 @@ class Cob
     @files = []
     
     f.count.times do |index|
-      fileend = (index < f.count ? @file.size : (f[index][1] - 1))
+      fileend = (index + 1 == f.count ? @file.size : (f[index + 1][1]))
       @files << Archived_file.new(f[index],fileend,@file) 
     end
   end
