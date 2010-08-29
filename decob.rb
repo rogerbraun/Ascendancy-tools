@@ -1,8 +1,8 @@
 require "pp"
 require "fileutils"
 
-if ARGV.size < 1 then
-  puts "usage: decob.rb <cobfile>"
+if ARGV.size < 2 then
+  puts "usage: decob.rb <cobfile> <folder>"
   exit
 end
 
@@ -66,4 +66,4 @@ class Cob
 end
 
 c = Cob.new(ARGV[0])
-c.extract("extract")
+c.extract(ARGV[1])
