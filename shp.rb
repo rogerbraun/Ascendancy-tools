@@ -54,7 +54,6 @@ class SHP
       read_header
       set_palette
       decode_lines
-      to_png
     end
 
     def set_palette
@@ -90,16 +89,20 @@ class SHP
     def decode_rle rest
       puts "Rest is #{rest}"
       byte = next_byte
+      if (rest < 0)
+        puts "Something went wrong, ending line."
+        binding.pry
+        return [[0],true]
+      end
       if byte == 0
         puts "Filling #{rest} with bg color..."
-        binding.pry if rest == @width
-        return Array.new rest, @bg_color
+        return [Array.new(rest, @bg_color), true]
       end
 
       if byte == 1
         length = next_byte
         puts "Filling length #{length} with bg color..."
-        return Array.new length, @bg_color
+        return [Array.new(length, @bg_color), false]
       end
 
       if byte & 0b0000_0001 == 0
@@ -107,7 +110,7 @@ class SHP
         length = byte >> 1
 
         puts "Filling #{length} with #{color}"
-        return Array.new length, color
+        return [Array.new(length, color), false]
       end
 
       if byte & 0b0000_0001 == 1
@@ -118,24 +121,27 @@ class SHP
         length.times do
           arr.push next_byte
         end
-        return arr
+        return [arr, false]
       end
     end
 
     def decode_lines
       @lines = []
-      while @lines.size < @width * @height
-        @lines += decode_rle(@width - (@lines.size % @width))
+      @height.times do
+        line = []
+        ended = false
+        while !ended do
+          pixels, ended = decode_rle(@width - line.size)
+          line += pixels
+        end
+        @lines.push(line)
       end
-      puts @lines.size
     end
 
     def to_png filename = "Image.png"
       png = ChunkyPNG::Image.new(@width, @height, ChunkyPNG::Color::TRANSPARENT)
-      @lines.each.with_index do |value, i|
-        x = i % @width
-        y = i / @height
-        if(x < @width and y < @height)
+      @lines.each.with_index do |line, y|
+        line.each.with_index do |value, x|
           png[x,y] = ChunkyPNG::Color.grayscale(value)
         end
       end
@@ -150,7 +156,10 @@ class SHP
 
   def read_images
     @images = @offsets.map do |offset|
-      img = Image.new(offset, @io, @verbose)
+      Image.new(offset, @io, @verbose)
+    end
+    @images.each.with_index do |img, i|
+      img.to_png("shpimg_#{i}.png")
     end
   end
 
