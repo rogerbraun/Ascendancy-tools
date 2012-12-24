@@ -96,7 +96,7 @@ class SHP
       byte = next_byte
       if (rest < 0)
         puts "Something went wrong, ending line."
-        binding.pry
+        raise "FAILURE"
         return [[0],true]
       end
       if byte == 0
@@ -163,8 +163,11 @@ class SHP
     @images = @offsets.map do |offset|
       Image.new(offset, @io, @verbose)
     end
+  end
+
+  def export_images folder, basename
     @images.each.with_index do |img, i|
-      img.to_png("shpimg_#{i}.png")
+      img.to_png(File.join(folder, basename + "_#{i}.png"))
     end
   end
 
