@@ -1,5 +1,6 @@
 require "pry"
 require "chunky_png"
+require "json"
 # See asc1-techinfo/SHP.htm
 
 module ByteHelpers
@@ -58,7 +59,11 @@ class SHP
 
     def set_palette
       if @offset[:palette] == 0
+        @palette = Hash.new(0) # Default color is black
+        default = eval(open("default_palette.hash").read)
+        default = default.map {|k,v| [k,ChunkyPNG::Color.from_hex(v)]}
         @bg_color = 0
+        @palette.merge! Hash[default]
       else
         raise "not implemented yet"
       end
@@ -87,7 +92,7 @@ class SHP
     end
 
     def decode_rle rest
-      puts "Rest is #{rest}"
+      #puts "Rest is #{rest}"
       byte = next_byte
       if (rest < 0)
         puts "Something went wrong, ending line."
@@ -95,13 +100,13 @@ class SHP
         return [[0],true]
       end
       if byte == 0
-        puts "Filling #{rest} with bg color..."
+        #puts "Filling #{rest} with bg color..."
         return [Array.new(rest, @bg_color), true]
       end
 
       if byte == 1
         length = next_byte
-        puts "Filling length #{length} with bg color..."
+        #puts "Filling length #{length} with bg color..."
         return [Array.new(length, @bg_color), false]
       end
 
@@ -109,13 +114,13 @@ class SHP
         color = next_byte
         length = byte >> 1
 
-        puts "Filling #{length} with #{color}"
+        #puts "Filling #{length} with #{color}"
         return [Array.new(length, color), false]
       end
 
       if byte & 0b0000_0001 == 1
         length = byte >> 1
-        puts "Reading #{length} direct bytes"
+        #puts "Reading #{length} direct bytes"
 
         arr = []
         length.times do
@@ -142,7 +147,7 @@ class SHP
       png = ChunkyPNG::Image.new(@width, @height, ChunkyPNG::Color::TRANSPARENT)
       @lines.each.with_index do |line, y|
         line.each.with_index do |value, x|
-          png[x,y] = ChunkyPNG::Color.grayscale(value)
+          png[x,y] = @palette[value]
         end
       end
       png.save filename
